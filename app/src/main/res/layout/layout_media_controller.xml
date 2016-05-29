@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:tools="http://schemas.android.com/tools"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+              android:orientation="vertical"
+             android:background="@color/transparent2">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:background="@color/trans_black2">
+
+        <ImageView
+            android:id="@+id/iv_player_finish"
+            android:layout_width="45dp"
+            android:layout_height="match_parent"
+            android:scaleType="center"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"/>
+
+        <TextView
+            android:id="@+id/tv_player_title"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:textColor="@color/white"
+            android:textSize="17sp"
+            tools:text="标题"/>
+
+        <ImageView
+            android:id="@+id/iv_player_collect"
+            android:layout_width="45dp"
+            android:layout_height="match_parent"
+            android:scaleType="center"
+            android:src="@android:drawable/ic_menu_gallery"/>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/transparent1"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/trans_black2"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <ImageView
+            android:id="@+id/iv_player_pause"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_edit"/>
+
+        <android.support.v7.widget.AppCompatSeekBar
+            android:id="@+id/sp_player_process"
+            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:max="100"
+            android:secondaryProgress="70"
+            tools:progress="50"/>
+
+        <TextView
+            android:id="@+id/tv_player_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:padding="4dp"
+            tools:text="0:00/0:39"/>
+
+        <ImageView
+            android:id="@+id/iv_player_fullscreen"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_always_landscape_portrait"/>
+
+    </LinearLayout>
+
+</LinearLayout>
