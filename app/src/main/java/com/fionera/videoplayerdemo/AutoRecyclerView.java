@@ -104,12 +104,10 @@ public class AutoRecyclerView
 
         if (mFootViews.size() > 0) {
             if (isOver) {
-                postDelayed(() -> {
-                    ((LinearLayout) mFootViews.get(0)).getChildAt(0).setVisibility(GONE);
-                    ((LinearLayout) mFootViews.get(0)).getChildAt(1).setVisibility(VISIBLE);
-                    mFootViews.get(0).setVisibility(VISIBLE);
-                    mLoadDataListener = null;
-                }, 333);
+                ((LinearLayout) mFootViews.get(0)).getChildAt(0).setVisibility(GONE);
+                ((LinearLayout) mFootViews.get(0)).getChildAt(1).setVisibility(VISIBLE);
+                mFootViews.get(0).setVisibility(VISIBLE);
+                mLoadDataListener = null;
             } else {
                 ((LinearLayout) mFootViews.get(0)).getChildAt(1).setVisibility(GONE);
                 ((LinearLayout) mFootViews.get(0)).getChildAt(0).setVisibility(VISIBLE);
@@ -121,8 +119,8 @@ public class AutoRecyclerView
     @Override
     public void setAdapter(Adapter adapter) {
         if (mFootViews.isEmpty()) {
-            View view = LayoutInflater.from(mContext)
-                    .inflate(R.layout.rv_loadmore_footer, this, false);
+            View view = LayoutInflater.from(mContext).inflate(R.layout.rv_loadmore_footer, this,
+                    false);
             mFootViews.add(view);
         }
         adapter = new WrapAdapter(mHeaderViews, mFootViews, adapter);
@@ -145,15 +143,14 @@ public class AutoRecyclerView
         for (int i = 0; i < mAdapter.getItemCount(); i++) {
             if (((WrapAdapter) mAdapter).isHeader(i)) {
                 View view = getChildAt(i);
-                ((StaggeredGridLayoutManager.LayoutParams) view.getLayoutParams())
-                        .setFullSpan(true);
+                ((StaggeredGridLayoutManager.LayoutParams) view.getLayoutParams()).setFullSpan(
+                        true);
                 view.requestLayout();
             } else {
                 break;
             }
         }
     }
-
 
 
     @Override
@@ -215,8 +212,8 @@ public class AutoRecyclerView
 
         private int headerPosition = 0;
 
-        WrapAdapter(ArrayList<View> mHeaderViews, ArrayList<View> mFootViews, Adapter
-                originAdapter) {
+        WrapAdapter(ArrayList<View> mHeaderViews, ArrayList<View> mFootViews,
+                    Adapter originAdapter) {
             this.originAdapter = originAdapter;
             if (mHeaderViews == null) {
                 this.mHeaderViews = EMPTY_INFO_LIST;

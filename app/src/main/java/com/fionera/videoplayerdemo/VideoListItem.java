@@ -1,107 +1,176 @@
 package com.fionera.videoplayerdemo;
 
 import android.graphics.Rect;
-import android.support.annotation.DrawableRes;
+import android.graphics.drawable.ColorDrawable;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.volokh.danylo.video_player_manager.manager.VideoItem;
 import com.volokh.danylo.video_player_manager.manager.VideoPlayerManager;
 import com.volokh.danylo.video_player_manager.meta.CurrentItemMetaData;
 import com.volokh.danylo.video_player_manager.meta.MetaData;
+import com.volokh.danylo.video_player_manager.ui.MediaPlayerWrapper;
+import com.volokh.danylo.video_player_manager.utils.Logger;
 import com.volokh.danylo.visibility_utils.items.ListItem;
 
 public abstract class VideoListItem
         implements VideoItem, ListItem {
 
-    private final Rect mCurrentViewRect; // 当前视图的方框
-    private final VideoPlayerManager<MetaData> mVideoPlayerManager; // 视频播放管理器
-    private final String mTitle; // 标题
-    @DrawableRes
-    private final int mImageResource; // 图片资源
+    private static final boolean SHOW_LOGS = false;
+    private static final String TAG = VideoListItem.class.getSimpleName();
 
-    // 构造器, 输入视频播放管理器
-    public VideoListItem(VideoPlayerManager<MetaData> videoPlayerManager, String title,
-                         @DrawableRes int imageResource) {
+    /**
+     * An object that is filled with values when {@link #getVisibilityPercents} method is called.
+     * This object is local visible rect filled by {@link View#getLocalVisibleRect}
+     */
+
+    private final Rect mCurrentViewRect = new Rect();
+    private final VideoPlayerManager<MetaData> mVideoPlayerManager;
+
+    protected VideoListItem(VideoPlayerManager<MetaData> videoPlayerManager) {
         mVideoPlayerManager = videoPlayerManager;
-        mTitle = title;
-        mImageResource = imageResource;
-
-        mCurrentViewRect = new Rect();
     }
 
-    // 视频项的标题
-    public String getTitle() {
-        return mTitle;
-    }
+    /**
+     * This method needs to be called when created/recycled view is updated.
+     * Call it in
+     * 1. {@link android.widget.ListAdapter#getView(int, View, ViewGroup)}
+     * 2.
+     * {@link android.support.v7.widget.RecyclerView.Adapter#onBindViewHolder(RecyclerView.ViewHolder, int)}
+     */
+    public abstract void update(int position, VideoViewHolder view,
+                                VideoPlayerManager videoPlayerManager);
 
-    // 视频项的背景
-    public int getImageResource() {
-        return mImageResource;
-    }
-
-    // 显示可视的百分比程度
+    /**
+     * When this item becomes active we start playback on the video in this item
+     */
     @Override
-    public int getVisibilityPercents(View view) {
+    public void setActive(View newActiveView, int newActiveViewPosition) {
+        if(newActiveView.getTag() instanceof VideoViewHolder) {
+            VideoViewHolder viewHolder = (VideoViewHolder) newActiveView.getTag();
+            viewHolder.mPlayer.setOnClickListener(v -> {
+                System.out.println("click to play " + newActiveViewPosition);
+                stopPlayback(mVideoPlayerManager);
+//                playNewVideo(new CurrentItemMetaData(newActiveViewPosition, newActiveView),
+//                        viewHolder.mPlayer, mVideoPlayerManager);
+            });
+            viewHolder.mCover.setImageDrawable(new ColorDrawable(
+                    ContextCompat.getColor(newActiveView.getContext(), R.color.blue2)));
+        }
+    }
+
+    /**
+     * When this item becomes inactive we stop playback on the video in this item.
+     */
+    @Override
+    public void deactivate(View currentView, int position) {
+        stopPlayback(mVideoPlayerManager);
+    }
+
+    public View createView(ViewGroup parent, int screenWidth) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_item, parent,
+                false);
+        ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
+        layoutParams.height = screenWidth;
+
+        final VideoViewHolder videoViewHolder = new VideoViewHolder(view);
+        view.setTag(videoViewHolder);
+
+        videoViewHolder.mPlayer.addMediaPlayerListener(
+                new MediaPlayerWrapper.MainThreadMediaPlayerListener() {
+                    @Override
+                    public void onVideoSizeChangedMainThread(int width, int height) {
+                    }
+
+                    @Override
+                    public void onVideoPreparedMainThread() {
+                        // When video is prepared it's about to start playback. So we hide the cover
+                        videoViewHolder.mCover.setVisibility(View.INVISIBLE);
+                    }
+
+                    @Override
+                    public void onVideoCompletionMainThread() {
+                    }
+
+                    @Override
+                    public void onErrorMainThread(int what, int extra) {
+                    }
+
+                    @Override
+                    public void onBufferingUpdateMainThread(int percent) {
+                    }
+
+                    @Override
+                    public void onVideoStoppedMainThread() {
+                        // Show the cover when video stopped
+                        videoViewHolder.mCover.setVisibility(View.VISIBLE);
+                    }
+                });
+        return view;
+    }
+
+    /**
+     * This method calculates visibility percentage of currentView.
+     * This method works correctly when currentView is smaller then it's enclosure.
+     *
+     * @param currentView - view which visibility should be calculated
+     * @return currentView visibility percents
+     */
+    @Override
+    public int getVisibilityPercents(View currentView) {
+        if (SHOW_LOGS) {
+            Logger.v(TAG, ">> getVisibilityPercents currentView " + currentView);
+        }
+
         int percents = 100;
 
-        view.getLocalVisibleRect(mCurrentViewRect);
-        int height = view.getHeight();
+        currentView.getLocalVisibleRect(mCurrentViewRect);
+        if (SHOW_LOGS) {
+            Logger.v(TAG,
+                    "getVisibilityPercents mCurrentViewRect top " + mCurrentViewRect.top + ", " +
+                            "left " + mCurrentViewRect.left + ", bottom " + mCurrentViewRect
+                            .bottom + ", right " + mCurrentViewRect.right);
+        }
+
+        int height = currentView.getHeight();
+        if (SHOW_LOGS) {
+            Logger.v(TAG, "getVisibilityPercents height " + height);
+        }
 
         if (viewIsPartiallyHiddenTop()) {
+            // view is partially hidden behind the top edge
             percents = (height - mCurrentViewRect.top) * 100 / height;
         } else if (viewIsPartiallyHiddenBottom(height)) {
             percents = mCurrentViewRect.bottom * 100 / height;
         }
 
-        // 设置百分比
-        setVisibilityPercentsText(view, percents);
+        setVisibilityPercentsText(currentView, percents);
+        if (SHOW_LOGS) {
+            Logger.v(TAG, "<< getVisibilityPercents, percents " + percents);
+        }
 
         return percents;
     }
 
-    @Override
-    public void setActive(View newActiveView, int newActiveViewPosition) {
-        ActiveVideoAdapter.VideoViewHolder viewHolder = (ActiveVideoAdapter.VideoViewHolder)
-                newActiveView
-                .getTag();
-        viewHolder.getTvTitle().setText("可播放状态");
-        viewHolder.itemView.setOnClickListener(v -> {
-            stopPlayback(mVideoPlayerManager);
-            viewHolder.getIvCover().setVisibility(View.GONE);
-            playNewVideo(new CurrentItemMetaData(newActiveViewPosition, newActiveView),
-                         viewHolder.getVpvPlayer(), mVideoPlayerManager);
-        });
-    }
-
-    @Override
-    public void deactivate(View currentView, int position) {
-        stopPlayback(mVideoPlayerManager);
-        ActiveVideoAdapter.VideoViewHolder viewHolder = (ActiveVideoAdapter.VideoViewHolder)
-                currentView
-                .getTag();
-        viewHolder.getTvTitle().setText("不可播放");
-    }
-
-    @Override
-    public void stopPlayback(VideoPlayerManager videoPlayerManager) {
-        videoPlayerManager.stopAnyPlayback();
-    }
-
-    // 显示百分比
     private void setVisibilityPercentsText(View currentView, int percents) {
-        ActiveVideoAdapter.VideoViewHolder vh = (ActiveVideoAdapter.VideoViewHolder) currentView
-                .getTag();
-        String percentsText = "可视百分比: " + String.valueOf(percents);
-        vh.getTvPercents().setText(percentsText);
+        if (SHOW_LOGS) {
+            Logger.v(TAG, "setVisibilityPercentsText percents " + percents);
+        }
+        VideoViewHolder videoViewHolder = (VideoViewHolder) currentView.getTag();
+        String percentsText = "Visibility percents: " + String.valueOf(percents);
+
+        videoViewHolder.mVisibilityPercents.setText(percentsText);
     }
 
-    // 顶部出现
-    private boolean viewIsPartiallyHiddenTop() {
-        return mCurrentViewRect.top > 0;
-    }
-
-    // 底部出现
     private boolean viewIsPartiallyHiddenBottom(int height) {
         return mCurrentViewRect.bottom > 0 && mCurrentViewRect.bottom < height;
+    }
+
+    private boolean viewIsPartiallyHiddenTop() {
+        return mCurrentViewRect.top > 0;
     }
 }
