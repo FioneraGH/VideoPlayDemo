@@ -22,6 +22,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.support.v7.app.AlertDialog;
@@ -29,8 +30,9 @@ import android.util.AttributeSet;
 import android.util.Pair;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.MediaController;
@@ -56,7 +58,7 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer;
  * provides various display options such as scaling and tinting.
  */
 public class VideoView
-        extends SurfaceView {
+        extends TextureView {
     private static final String TAG = VideoView.class.getName();
 
     private Uri mUri;
@@ -83,7 +85,7 @@ public class VideoView
     public static final int VIDEO_LAYOUT_STRETCH = 2;
     public static final int VIDEO_LAYOUT_ZOOM = 3;
 
-    private SurfaceHolder mSurfaceHolder = null;
+    private SurfaceTexture mSurfaceTexture = null;
     private IMediaPlayer mMediaPlayer = null;
     private int mVideoWidth;
     private int mVideoHeight;
@@ -166,7 +168,7 @@ public class VideoView
                         (windowWidth / videoRatio);
             }
             setLayoutParams(lp);
-            getHolder().setFixedSize(mSurfaceWidth, mSurfaceHeight);
+//            getHolder().setFixedSize(mSurfaceWidth, mSurfaceHeight);
             System.out.println(String.format(Locale.CHINA,
                                              "VIDEO: %dx%dx%f[SAR:%d:%d], Surface: %dx%d, LP: " +
                                                      "%dx%d, Window: %dx%dx%f",
@@ -183,7 +185,7 @@ public class VideoView
         mVideoHeight = 0;
         mVideoSarNum = 0;
         mVideoSarDen = 0;
-        getHolder().addCallback(mSHCallback);
+        setSurfaceTextureListener(mSHCallback);
         setFocusable(true);
         setFocusableInTouchMode(true);
         requestFocus();
@@ -195,7 +197,7 @@ public class VideoView
     }
 
     public boolean isValid() {
-        return (mSurfaceHolder != null && mSurfaceHolder.getSurface().isValid());
+        return mSurfaceTexture != null;
     }
 
     public void setVideoPath(String path) {
@@ -225,7 +227,7 @@ public class VideoView
     }
 
     private void openVideo() {
-        if (mUri == null || mSurfaceHolder == null) {
+        if (mUri == null || mSurfaceTexture == null) {
             return;
         }
 
@@ -264,7 +266,7 @@ public class VideoView
             if (mUri != null) {
                 mMediaPlayer.setDataSource(mUri.toString());
             }
-            mMediaPlayer.setDisplay(mSurfaceHolder);
+            mMediaPlayer.setSurface(new Surface(mSurfaceTexture));
             mMediaPlayer.setScreenOnWhilePlaying(true);
             mMediaPlayer.prepareAsync();
             mCurrentState = STATE_PREPARING;
@@ -486,17 +488,30 @@ public class VideoView
         mOnInfoListener = l;
     }
 
-    SurfaceHolder.Callback mSHCallback = new SurfaceHolder.Callback() {
-        public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
-            mSurfaceHolder = holder;
+    TextureView.SurfaceTextureListener mSHCallback = new TextureView.SurfaceTextureListener() {
+        @Override
+        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+            mSurfaceTexture = surface;
+            if (mMediaPlayer != null && mCurrentState == STATE_SUSPEND && mTargetState ==
+                    STATE_RESUME) {
+                mMediaPlayer.setSurface(new Surface(mSurfaceTexture));
+                resume();
+            } else {
+                openVideo();
+            }
+        }
+
+        @Override
+        public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+            mSurfaceTexture = surface;
             if (mMediaPlayer != null) {
-                mMediaPlayer.setDisplay(mSurfaceHolder);
+                mMediaPlayer.setSurface(new Surface(mSurfaceTexture));
             }
 
-            mSurfaceWidth = w;
-            mSurfaceHeight = h;
+            mSurfaceWidth = width;
+            mSurfaceHeight = height;
             boolean isValidState = (mTargetState == STATE_PLAYING);
-            boolean hasValidSize = (mVideoWidth == w && mVideoHeight == h);
+            boolean hasValidSize = (mVideoWidth == width && mVideoHeight == height);
             if (mMediaPlayer != null && isValidState && hasValidSize) {
                 if (mSeekWhenPrepared != 0) {
                     seekTo(mSeekWhenPrepared);
@@ -511,25 +526,21 @@ public class VideoView
             }
         }
 
-        public void surfaceCreated(SurfaceHolder holder) {
-            mSurfaceHolder = holder;
-            if (mMediaPlayer != null && mCurrentState == STATE_SUSPEND && mTargetState ==
-                    STATE_RESUME) {
-                mMediaPlayer.setDisplay(mSurfaceHolder);
-                resume();
-            } else {
-                openVideo();
-            }
-        }
-
-        public void surfaceDestroyed(SurfaceHolder holder) {
-            mSurfaceHolder = null;
+        @Override
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+            mSurfaceTexture = null;
             if (mMediaController != null) {
                 mMediaController.hide();
             }
             if (mCurrentState != STATE_SUSPEND) {
                 release(true);
             }
+            return true;
+        }
+
+        @Override
+        public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+
         }
     };
 
@@ -616,7 +627,7 @@ public class VideoView
     }
 
     public void resume() {
-        if (mSurfaceHolder == null && mCurrentState == STATE_SUSPEND) {
+        if (mSurfaceTexture == null && mCurrentState == STATE_SUSPEND) {
             mTargetState = STATE_RESUME;
         } else if (mCurrentState == STATE_SUSPEND_UNSUPPORTED) {
             openVideo();

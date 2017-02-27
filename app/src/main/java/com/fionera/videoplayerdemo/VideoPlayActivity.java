@@ -13,10 +13,10 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.fionera.videoplayerdemo.ijkplayer.OnCustomBufferingListener;
 import com.fionera.videoplayerdemo.ijkplayer.VideoView;
+import com.fionera.videoplayerdemo.util.AcFunDanmakuParser;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -36,9 +36,7 @@ import master.flame.danmaku.danmaku.model.android.Danmakus;
 import master.flame.danmaku.danmaku.model.android.SimpleTextCacheStuffer;
 import master.flame.danmaku.danmaku.parser.BaseDanmakuParser;
 import master.flame.danmaku.danmaku.parser.IDataSource;
-import master.flame.danmaku.danmaku.parser.android.AcFunDanmakuParser;
 import tv.danmaku.ijk.media.player.IjkMediaPlayer;
-
 
 public class VideoPlayActivity
         extends AppCompatActivity
@@ -141,11 +139,13 @@ public class VideoPlayActivity
             mParser = createParser(null);
             mDanmakuView.setOnDanmakuClickListener(new IDanmakuView.OnDanmakuClickListener() {
                 @Override
-                public void onDanmakuClick(BaseDanmaku latest) {
+                public boolean onDanmakuClick(IDanmakus iDanmakus) {
+                    return false;
                 }
 
                 @Override
-                public void onDanmakuClick(IDanmakus danmakus) {
+                public boolean onViewClick(IDanmakuView iDanmakuView) {
+                    return false;
                 }
             });
             mDanmakuView.prepare(mParser, danmakuContext);
@@ -200,8 +200,8 @@ public class VideoPlayActivity
             tvTips.setVisibility(View.VISIBLE);
             recyclerView.setVisibility(View.VISIBLE);
         }
-        /**
-         * reset to fit the new size , insure the method is correct
+        /*
+          reset to fit the new size , insure the method is correct
          */
         mVideoView.setVideoLayout(VideoView.VIDEO_LAYOUT_SCALE);
     }
@@ -322,7 +322,7 @@ public class VideoPlayActivity
         danmaku.padding = 5;
         danmaku.priority = 1;  // 可能会被各种过滤器过滤并隐藏显示
         danmaku.isLive = isLive;
-        danmaku.time = mDanmakuView.getCurrentTime() + 1200;
+        danmaku.timeOffset = mDanmakuView.getCurrentTime() + 1200;
         danmaku.textSize = 25f * (mParser.getDisplayer().getDensity() - 0.6f);
         danmaku.textColor = Color.WHITE;
         danmaku.textShadowColor = Color.BLACK;

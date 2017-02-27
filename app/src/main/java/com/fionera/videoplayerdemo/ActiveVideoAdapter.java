@@ -9,9 +9,6 @@ import com.volokh.danylo.video_player_manager.manager.VideoPlayerManager;
 
 import java.util.List;
 
-/**
- * Created by danylo.volokh on 9/20/2015.
- */
 public class ActiveVideoAdapter
         extends RecyclerView.Adapter<VideoViewHolder> {
 
@@ -25,8 +22,6 @@ public class ActiveVideoAdapter
         mContext = context;
         mList = list;
     }
-
-    private int count = 0;
 
     @Override
     public VideoViewHolder onCreateViewHolder(ViewGroup viewGroup, int position) {

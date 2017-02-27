@@ -7,6 +7,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 
 /**
+ * MainActivity
  * Created by fionera on 16-6-1.
  */
 
